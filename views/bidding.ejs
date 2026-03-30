@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bidding System - Alumni Influencers</title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <script>
+        async function updateStatus() {
+            try {
+                const response = await fetch('/bidding/status');
+                const data = await response.json();
+                document.getElementById('status').innerText =
+                    data.isWinning ? 'You are currently winning!' :
+                    data.hasActiveBid ? 'You have an active bid, but are not winning.' :
+                    'No active bid.';
+                if (data.lastBid) {
+                    document.getElementById('lastBid').innerText = `Last bid: £${data.lastBid} on ${new Date(data.lastBidDate).toLocaleString()}`;
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+            }
+        }
+
+        setInterval(updateStatus, 5000); // Update every 5 seconds
+        window.onload = updateStatus;
+    </script>
+</head>
+<body>
+    <h1>Alumni of the Day Bidding</h1>
+    <p>Place your bid for the exclusive Alumni of the Day feature. Bidding is blind - you cannot see the current highest bid.</p>
+
+    <div id="status">Loading status...</div>
+    <div id="lastBid"></div>
+
+    <p>Monthly wins: <%= monthlyWins %> / <%= maxWins %> (Remaining slots: <%= remainingSlots %>)</p>
+
+    <% if (remainingSlots > 0) { %>
+        <form action="/bidding" method="POST">
+            <label>Bid Amount (£): <input type="number" name="amount" step="0.01" min="0.01" required></label>
+            <button type="submit"><%= hasActiveBid ? 'Update Bid' : 'Place Bid' %></button>
+        </form>
+    <% } else { %>
+        <p>You have reached your monthly bidding limit.</p>
+    <% } %>
+
+    <h2>Your Recent Bids</h2>
+    <ul>
+        <% userBids.forEach(bid => { %>
+            <li>£<%= bid.amount %> on <%= bid.bidDate.toLocaleString() %> - Status: <%= bid.status %></li>
+        <% }); %>
+    </ul>
+
+    <br>
+    <a href="/profile">Edit Profile</a> | <a href="/auth/logout">Logout</a>
+</body>
+</html>
