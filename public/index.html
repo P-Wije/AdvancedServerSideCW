@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alumni Influencers</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">University of Eastminster</p>
+        <h1>Alumni Influencers Control Centre</h1>
+        <p class="lede">Client-side rendered management pages for registration, profile creation, blind bidding, and developer API key access.</p>
+      </div>
+      <div class="hero-actions">
+        <a class="ghost-link" href="/api-docs">Open Swagger</a>
+        <a class="ghost-link" href="/verify-email.html">Verify Email</a>
+        <a class="ghost-link" href="/reset-password.html">Reset Password</a>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="card">
+        <h2>Account</h2>
+        <div id="sessionSummary" class="status-block">Loading session details...</div>
+
+        <form id="registerForm" class="stack">
+          <h3>Register</h3>
+          <input type="email" name="email" placeholder="name@eastminster.ac.uk" required />
+          <input type="password" name="password" placeholder="Strong password" required />
+          <button type="submit">Create Account</button>
+        </form>
+
+        <form id="loginForm" class="stack">
+          <h3>Login</h3>
+          <input type="email" name="email" placeholder="name@eastminster.ac.uk" required />
+          <input type="password" name="password" placeholder="Password" required />
+          <button type="submit">Login</button>
+        </form>
+
+        <form id="forgotPasswordForm" class="stack">
+          <h3>Forgot Password</h3>
+          <input type="email" name="email" placeholder="name@eastminster.ac.uk" required />
+          <button type="submit">Send Reset Email</button>
+        </form>
+
+        <form id="resendVerificationForm" class="stack">
+          <h3>Resend Verification</h3>
+          <input type="email" name="email" placeholder="name@eastminster.ac.uk" required />
+          <button type="submit">Resend Verification</button>
+        </form>
+
+        <button id="logoutButton" class="secondary">Logout</button>
+      </section>
+
+      <section class="card">
+        <h2>Profile Builder</h2>
+        <p class="muted">Use JSON arrays for repeatable sections to keep the front end client-rendered and API-first.</p>
+        <form id="profileForm" class="stack" enctype="multipart/form-data">
+          <input type="text" name="firstName" placeholder="First name" required />
+          <input type="text" name="lastName" placeholder="Last name" required />
+          <textarea name="biography" rows="5" placeholder="Biography" required></textarea>
+          <input type="url" name="linkedinUrl" placeholder="https://www.linkedin.com/in/..." required />
+          <label class="file-field">Profile image <input type="file" name="profileImage" accept="image/*" /></label>
+          <textarea name="degrees" rows="4" placeholder='[{"title":"BSc Computer Science","referenceUrl":"https://eastminster.ac.uk/degrees/bsc","completionDate":"2023-06-01"}]'></textarea>
+          <textarea name="certifications" rows="4" placeholder='[{"title":"AWS Certified Developer","referenceUrl":"https://aws.amazon.com/certification","completionDate":"2025-02-01"}]'></textarea>
+          <textarea name="licences" rows="4" placeholder='[{"title":"PRINCE2 Practitioner","referenceUrl":"https://example.com/licence","completionDate":"2025-03-01"}]'></textarea>
+          <textarea name="courses" rows="4" placeholder='[{"title":"Product Leadership Bootcamp","referenceUrl":"https://example.com/course","completionDate":"2025-01-10"}]'></textarea>
+          <textarea name="employmentHistory" rows="4" placeholder='[{"employer":"Phantasmagoria Ltd","jobTitle":"AR Platform Engineer","startDate":"2024-01-01","endDate":""}]'></textarea>
+          <button type="submit">Save Profile</button>
+        </form>
+        <pre id="profilePreview" class="json-box">Profile data will appear here.</pre>
+      </section>
+
+      <section class="card">
+        <h2>Blind Bidding</h2>
+        <div id="bidOverview" class="status-block">Bidding overview will appear here.</div>
+        <form id="bidForm" class="stack">
+          <input type="number" step="0.01" min="0.01" name="amount" placeholder="Bid amount in GBP" required />
+          <button type="submit">Place or Increase Bid</button>
+        </form>
+        <form id="eventForm" class="stack">
+          <h3>Event Participation</h3>
+          <input type="text" name="eventName" placeholder="Event name" required />
+          <input type="date" name="participatedOn" required />
+          <button type="submit">Unlock 4th Monthly Slot</button>
+        </form>
+        <pre id="bidHistory" class="json-box">Bid history will appear here.</pre>
+      </section>
+
+      <section class="card">
+        <h2>Developer API Keys</h2>
+        <form id="apiKeyForm" class="stack">
+          <input type="text" name="name" placeholder="API key label" required />
+          <button type="submit">Generate API Key</button>
+        </form>
+        <pre id="apiKeyOutput" class="json-box">Generated keys and usage reports will appear here.</pre>
+      </section>
+    </main>
+
+    <section id="flash" class="flash hidden"></section>
+  </div>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>
