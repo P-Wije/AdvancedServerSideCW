@@ -132,9 +132,14 @@ async function login(req, res) {
 }
 
 function logout(req, res) {
-  req.session.destroy(() => {
+  req.session.destroy((destroyError) => {
+    if (destroyError) {
+      console.error('Logout failed while destroying session:', destroyError);
+      return res.status(500).json({ message: 'Logout failed. Please try again.' });
+    }
+
     res.clearCookie('connect.sid');
-    res.json({ message: 'Logged out successfully.' });
+    return res.json({ message: 'Logged out successfully.' });
   });
 }
 

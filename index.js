@@ -1,4 +1,4 @@
-const path = require('path');
+const path = require('node:path');
 const express = require('express');
 const session = require('express-session');
 const SQLiteStoreFactory = require('connect-sqlite3');
@@ -38,6 +38,7 @@ app.use(morgan('dev'));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(cookieParser());
+app.use(express.static(path.join(config.rootDir, 'public')));
 app.use(session({
   store: new SQLiteStore({
     db: 'sessions.sqlite',
@@ -57,7 +58,6 @@ app.use(session({
 }));
 app.use(attachRequestContext);
 app.use(csrfProtection);
-app.use(express.static(path.join(config.rootDir, 'public')));
 
 app.get('/health', (req, res) => {
   res.json({ ok: true, timestamp: new Date().toISOString() });

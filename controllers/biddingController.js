@@ -16,12 +16,44 @@ function getMonthlyAllowance(userId, targetDate) {
   const bounds = monthBounds(target);
   const wins = getMonthlyWinCount(userId, bounds.start, bounds.end);
   const hasBonus = hasMonthlyEventBonus(userId, monthKey(target));
+  const maxWins = hasBonus ? 4 : 3;
+
   return {
     month: monthKey(target),
     wins,
-    maxWins: hasBonus ? 4 : 3,
-    remaining: Math.max((hasBonus ? 4 : 3) - wins, 0),
+    maxWins,
+    remaining: Math.max(maxWins - wins, 0),
     hasBonus,
+  };
+}
+
+function getHighestBidForTargetDate(targetDate, selectedSlot) {
+  if (selectedSlot) {
+    return db.prepare('SELECT * FROM bids WHERE id = ?').get(selectedSlot.bid_id);
+  }
+
+  return getHighestActiveBid(targetDate);
+}
+
+function getBidFeedback(myBid, highestBid) {
+  if (!myBid) {
+    return 'no-active-bid';
+  }
+
+  if (highestBid && myBid.id === highestBid.id) {
+    return 'winning';
+  }
+
+  return 'not-winning';
+}
+
+function buildBlindStatus(myBid, highestBid) {
+  return {
+    hasBid: Boolean(myBid),
+    isWinning: Boolean(myBid && highestBid && myBid.id === highestBid.id),
+    currentBidAmount: myBid ? myBid.amount : null,
+    status: myBid ? myBid.status : 'none',
+    feedback: getBidFeedback(myBid, highestBid),
   };
 }
 
@@ -30,24 +62,14 @@ function overview(req, res) {
   const allowance = getMonthlyAllowance(req.user.id, targetDate);
   const myBid = getBidForUserAndDate(req.user.id, targetDate);
   const selectedSlot = db.prepare('SELECT * FROM featured_slots WHERE target_date = ?').get(targetDate);
-  const highestBid = selectedSlot
-    ? db.prepare('SELECT * FROM bids WHERE id = ?').get(selectedSlot.bid_id)
-    : getHighestActiveBid(targetDate);
+  const highestBid = getHighestBidForTargetDate(targetDate, selectedSlot);
 
   const tomorrowHistory = getBidsForUser(req.user.id, 10);
 
   return res.json({
     targetDate,
     biddingOpen: !biddingClosesAtSixPm() && !selectedSlot,
-    blindStatus: {
-      hasBid: Boolean(myBid),
-      isWinning: Boolean(myBid && highestBid && myBid.id === highestBid.id),
-      currentBidAmount: myBid ? myBid.amount : null,
-      status: myBid ? myBid.status : 'none',
-      feedback: myBid
-        ? (highestBid && myBid.id === highestBid.id ? 'winning' : 'not-winning')
-        : 'no-active-bid',
-    },
+    blindStatus: buildBlindStatus(myBid, highestBid),
     monthlyAllowance: allowance,
     history: tomorrowHistory,
   });
@@ -88,8 +110,11 @@ function placeBid(req, res) {
     `).run(req.user.id, targetDate, amount);
   }
 
-  return res.status(existingBid ? 200 : 201).json({
-    message: existingBid ? 'Bid increased successfully.' : 'Bid placed successfully.',
+  const responseStatus = existingBid ? 200 : 201;
+  const responseMessage = existingBid ? 'Bid increased successfully.' : 'Bid placed successfully.';
+
+  return res.status(responseStatus).json({
+    message: responseMessage,
     overview: {
       targetDate,
       ...overviewPayload(req.user.id, targetDate),
@@ -101,21 +126,11 @@ function overviewPayload(userId, targetDate) {
   const allowance = getMonthlyAllowance(userId, targetDate);
   const myBid = getBidForUserAndDate(userId, targetDate);
   const selectedSlot = db.prepare('SELECT * FROM featured_slots WHERE target_date = ?').get(targetDate);
-  const highestBid = selectedSlot
-    ? db.prepare('SELECT * FROM bids WHERE id = ?').get(selectedSlot.bid_id)
-    : getHighestActiveBid(targetDate);
+  const highestBid = getHighestBidForTargetDate(targetDate, selectedSlot);
 
   return {
     biddingOpen: !biddingClosesAtSixPm() && !selectedSlot,
-    blindStatus: {
-      hasBid: Boolean(myBid),
-      isWinning: Boolean(myBid && highestBid && myBid.id === highestBid.id),
-      currentBidAmount: myBid ? myBid.amount : null,
-      status: myBid ? myBid.status : 'none',
-      feedback: myBid
-        ? (highestBid && myBid.id === highestBid.id ? 'winning' : 'not-winning')
-        : 'no-active-bid',
-    },
+    blindStatus: buildBlindStatus(myBid, highestBid),
     monthlyAllowance: allowance,
     history: getBidsForUser(userId, 10),
   };

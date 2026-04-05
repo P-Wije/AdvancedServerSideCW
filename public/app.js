@@ -18,6 +18,20 @@ function showMessage(message, isError = false) {
   }, 4000);
 }
 
+async function parseResponsePayload(response) {
+  const rawBody = await response.text();
+  if (!rawBody) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(rawBody);
+  } catch (error) {
+    console.error('Failed to parse response payload:', error);
+    return {};
+  }
+}
+
 async function apiFetch(url, options = {}) {
   const headers = new Headers(options.headers || {});
   if (state.csrfToken && !url.startsWith('/api/public/')) {
@@ -30,7 +44,7 @@ async function apiFetch(url, options = {}) {
     headers,
   });
 
-  const payload = await response.json().catch(() => ({}));
+  const payload = await parseResponsePayload(response);
   if (!response.ok) {
     throw new Error(payload.message || 'Request failed.');
   }
@@ -50,6 +64,7 @@ async function refreshProfile() {
     state.profile = payload.profile;
     profilePreview.textContent = JSON.stringify(payload.profile, null, 2);
   } catch (error) {
+    console.error('Failed to refresh profile:', error);
     profilePreview.textContent = 'Sign in and verify your email to load your profile.';
   }
 }
@@ -61,6 +76,7 @@ async function refreshBids() {
     const history = await apiFetch('/bids/history');
     bidHistory.textContent = JSON.stringify(history, null, 2);
   } catch (error) {
+    console.error('Failed to refresh bids:', error);
     bidOverview.textContent = 'Sign in and verify your email to manage bidding.';
     bidHistory.textContent = 'No bidding data available.';
   }
@@ -71,6 +87,7 @@ async function refreshApiKeys() {
     const payload = await apiFetch('/developer/api-keys');
     apiKeyOutput.textContent = JSON.stringify(payload, null, 2);
   } catch (error) {
+    console.error('Failed to refresh API keys:', error);
     apiKeyOutput.textContent = 'Sign in and verify your email to manage API keys.';
   }
 }
@@ -176,4 +193,10 @@ Promise.allSettled([
   refreshProfile(),
   refreshBids(),
   refreshApiKeys(),
-]);
+]).then((results) => {
+  results.forEach((result) => {
+    if (result.status === 'rejected') {
+      console.error('Dashboard initialization task failed:', result.reason);
+    }
+  });
+});
