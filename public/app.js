@@ -114,15 +114,59 @@ function bindSimpleJsonForm(formId, url, onSuccess) {
   });
 }
 
+function parseJsonArrayInput(value) {
+  if (!value.trim()) {
+    return [];
+  }
+
+  return JSON.parse(value);
+}
+
 document.getElementById('profileForm').addEventListener('submit', async (event) => {
   event.preventDefault();
   const form = event.currentTarget;
   const formData = new FormData(form);
   try {
-    const payload = await apiFetch('/profile/me', {
-      method: 'POST',
-      body: formData,
+    const coreFormData = new FormData();
+    coreFormData.set('firstName', formData.get('firstName'));
+    coreFormData.set('lastName', formData.get('lastName'));
+    coreFormData.set('biography', formData.get('biography'));
+    coreFormData.set('linkedinUrl', formData.get('linkedinUrl'));
+
+    const profileImage = formData.get('profileImage');
+    if (profileImage instanceof File && profileImage.size > 0) {
+      coreFormData.set('profileImage', profileImage);
+    }
+
+    await apiFetch('/profile/me', {
+      method: 'PUT',
+      body: coreFormData,
     });
+
+    const achievementPayloads = [
+      ['degree', parseJsonArrayInput(String(formData.get('degrees') || '[]'))],
+      ['certification', parseJsonArrayInput(String(formData.get('certifications') || '[]'))],
+      ['licence', parseJsonArrayInput(String(formData.get('licences') || '[]'))],
+      ['course', parseJsonArrayInput(String(formData.get('courses') || '[]'))],
+    ];
+
+    for (const [type, entries] of achievementPayloads) {
+      await apiFetch(`/profile/me/achievements/${type}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entries }),
+      });
+    }
+
+    await apiFetch('/profile/me/employment-history', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        entries: parseJsonArrayInput(String(formData.get('employmentHistory') || '[]')),
+      }),
+    });
+
+    const payload = await apiFetch('/profile/me');
     profilePreview.textContent = JSON.stringify(payload.profile, null, 2);
     showMessage(payload.message || 'Profile saved.');
   } catch (error) {
