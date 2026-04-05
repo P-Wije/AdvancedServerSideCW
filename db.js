@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const Database = require('better-sqlite3');
 const config = require('./lib/config');
 

@@ -1,4 +1,4 @@
-const path = require('path');
+const path = require('node:path');
 const multer = require('multer');
 const db = require('../db');
 const config = require('../lib/config');
