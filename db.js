@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const Database = require('better-sqlite3');
 const config = require('./lib/config');
+const logger = require('./lib/logger');
 
 const dataDir = path.dirname(config.dbPath);
 fs.mkdirSync(dataDir, { recursive: true });
@@ -10,6 +11,11 @@ const db = new Database(config.dbPath);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
+/**
+ * Creates the relational schema and indexes required by the application.
+ *
+ * @returns {void}
+ */
 function initializeDatabase() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -131,5 +137,6 @@ function initializeDatabase() {
 }
 
 initializeDatabase();
+logger.info('Database initialized.', { dbPath: config.dbPath });
 
 module.exports = db;

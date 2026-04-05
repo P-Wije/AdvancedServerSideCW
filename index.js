@@ -10,6 +10,7 @@ const morgan = require('morgan');
 require('./db');
 
 const config = require('./lib/config');
+const logger = require('./lib/logger');
 const { specs, swaggerUi } = require('./lib/swagger');
 const { startScheduler } = require('./lib/scheduler');
 const { apiRateLimiter, attachRequestContext, authRateLimiter, csrfProtection, requireApiToken, requireSession, requireVerifiedUser } = require('./lib/middleware');
@@ -59,6 +60,13 @@ app.use(session({
 app.use(attachRequestContext);
 app.use(csrfProtection);
 
+/**
+ * Responds with a minimal health payload used by local checks and future load balancers.
+ *
+ * @param {import('express').Request} req Incoming HTTP request.
+ * @param {import('express').Response} res Outgoing HTTP response.
+ * @returns {void}
+ */
 app.get('/health', (req, res) => {
   res.json({ ok: true, timestamp: new Date().toISOString() });
 });
@@ -73,7 +81,9 @@ app.post('/auth/forgot-password', authRateLimiter(), authValidators.forgotPasswo
 app.post('/auth/reset-password', authRateLimiter(), authValidators.resetPassword, validationHandler, authController.resetPassword);
 
 app.get('/profile/me', requireSession, requireVerifiedUser, profileController.getMyProfile);
-app.post('/profile/me', requireSession, requireVerifiedUser, profileController.upload.single('profileImage'), profileController.saveProfile);
+app.put('/profile/me', requireSession, requireVerifiedUser, profileController.upload.single('profileImage'), profileController.replaceCoreProfile);
+app.put('/profile/me/achievements/:type', requireSession, requireVerifiedUser, profileController.replaceAchievementCollection);
+app.put('/profile/me/employment-history', requireSession, requireVerifiedUser, profileController.replaceEmploymentHistory);
 
 app.get('/bids/overview', requireSession, requireVerifiedUser, biddingController.overview);
 app.get('/bids/history', requireSession, requireVerifiedUser, biddingController.history);
@@ -103,12 +113,19 @@ app.use((error, req, res, next) => {
     return res.status(400).json({ message: `Profile images must be under ${Math.round(config.uploadMaxBytes / (1024 * 1024))}MB.` });
   }
 
-  console.error(error);
+  logger.error('Unhandled application error.', {
+    error,
+    method: req.method,
+    path: req.originalUrl,
+  });
   return res.status(500).json({ message: 'Unexpected server error.' });
 });
 
 app.listen(config.port, () => {
-  console.log(`Alumni Influencers API listening on ${config.appBaseUrl}`);
+  logger.info('Alumni Influencers API started.', {
+    baseUrl: config.appBaseUrl,
+    environment: config.nodeEnv,
+  });
 });
 
 startScheduler();

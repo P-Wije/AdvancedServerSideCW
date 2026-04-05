@@ -1,10 +1,18 @@
 const db = require('../db');
 const config = require('../lib/config');
+const logger = require('../lib/logger');
 const { sendMail } = require('../lib/mailer');
 const { getProfileByUserId, getUserByEmail, getUserById, getUserByResetTokenHash, getUserByVerificationTokenHash } = require('../lib/repositories');
 const { comparePassword, createOpaqueTokenPair, hashPassword, hashToken } = require('../lib/security');
 const { isoNow } = require('../lib/time');
 
+/**
+ * Registers a new alumni account and issues an email verification token.
+ *
+ * @param {import('express').Request} req Incoming HTTP request.
+ * @param {import('express').Response} res Outgoing HTTP response.
+ * @returns {Promise<void>}
+ */
 async function register(req, res) {
   const email = String(req.body.email || '').trim().toLowerCase();
   const password = String(req.body.password || '');
@@ -38,12 +46,24 @@ async function register(req, res) {
     text: `Welcome to Alumni Influencers. Verify your email here: ${verificationUrl}`,
   });
 
+  logger.info('Registered alumni account and queued verification email.', {
+    email,
+    userId: result.lastInsertRowid,
+  });
+
   return res.status(201).json({
     message: 'Registration complete. Please check your email to verify your account.',
     userId: result.lastInsertRowid,
   });
 }
 
+/**
+ * Verifies an alumni email address using the supplied opaque token.
+ *
+ * @param {import('express').Request} req Incoming HTTP request.
+ * @param {import('express').Response} res Outgoing HTTP response.
+ * @returns {Promise<void>}
+ */
 async function verifyEmail(req, res) {
   const token = String(req.query.token || req.body.token || '').trim();
   if (!token) {
@@ -64,9 +84,18 @@ async function verifyEmail(req, res) {
     WHERE id = ?
   `).run(user.id);
 
+  logger.info('Verified alumni email address.', { userId: user.id });
+
   return res.json({ message: 'Email verified successfully.' });
 }
 
+/**
+ * Sends a fresh verification email when an unverified user requests another token.
+ *
+ * @param {import('express').Request} req Incoming HTTP request.
+ * @param {import('express').Response} res Outgoing HTTP response.
+ * @returns {Promise<void>}
+ */
 async function resendVerification(req, res) {
   const email = String(req.body.email || '').trim().toLowerCase();
   const user = getUserByEmail(email);
@@ -94,9 +123,18 @@ async function resendVerification(req, res) {
     text: `Verify your email here: ${verificationUrl}`,
   });
 
+  logger.info('Resent verification email.', { email, userId: user.id });
+
   return res.json({ message: 'If the account exists, a verification email has been sent.' });
 }
 
+/**
+ * Authenticates an alumnus and attaches the account id to the session.
+ *
+ * @param {import('express').Request} req Incoming HTTP request.
+ * @param {import('express').Response} res Outgoing HTTP response.
+ * @returns {Promise<void>}
+ */
 async function login(req, res) {
   const email = String(req.body.email || '').trim().toLowerCase();
   const password = String(req.body.password || '');
@@ -120,6 +158,11 @@ async function login(req, res) {
 
   db.prepare('UPDATE users SET last_login_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
 
+  logger.info('Authenticated alumni session.', {
+    userId: user.id,
+    email: user.email,
+  });
+
   return res.json({
     message: 'Login successful.',
     user: {
@@ -131,18 +174,33 @@ async function login(req, res) {
   });
 }
 
+/**
+ * Destroys the active browser session and clears the session cookie.
+ *
+ * @param {import('express').Request} req Incoming HTTP request.
+ * @param {import('express').Response} res Outgoing HTTP response.
+ * @returns {void}
+ */
 function logout(req, res) {
   req.session.destroy((destroyError) => {
     if (destroyError) {
-      console.error('Logout failed while destroying session:', destroyError);
+      logger.error('Logout failed while destroying session.', destroyError);
       return res.status(500).json({ message: 'Logout failed. Please try again.' });
     }
 
     res.clearCookie('connect.sid');
+    logger.info('Destroyed authenticated session.', { userId: req.user?.id || null });
     return res.json({ message: 'Logged out successfully.' });
   });
 }
 
+/**
+ * Starts the password reset flow for an existing account without disclosing account existence.
+ *
+ * @param {import('express').Request} req Incoming HTTP request.
+ * @param {import('express').Response} res Outgoing HTTP response.
+ * @returns {Promise<void>}
+ */
 async function forgotPassword(req, res) {
   const email = String(req.body.email || '').trim().toLowerCase();
   const user = getUserByEmail(email);
@@ -163,11 +221,20 @@ async function forgotPassword(req, res) {
       subject: 'Reset your Alumni Influencers password',
       text: `Reset your password here: ${resetUrl}`,
     });
+
+    logger.info('Issued password reset token.', { email, userId: user.id });
   }
 
   return res.json({ message: 'If the email exists, a password reset message has been sent.' });
 }
 
+/**
+ * Replaces the current password using a valid reset token.
+ *
+ * @param {import('express').Request} req Incoming HTTP request.
+ * @param {import('express').Response} res Outgoing HTTP response.
+ * @returns {Promise<void>}
+ */
 async function resetPassword(req, res) {
   const token = String(req.body.token || '').trim();
   const password = String(req.body.password || '');
@@ -187,9 +254,18 @@ async function resetPassword(req, res) {
     WHERE id = ?
   `).run(passwordHash, user.id);
 
+  logger.info('Reset alumni password.', { userId: user.id });
+
   return res.json({ message: 'Password reset successful. You can now sign in.' });
 }
 
+/**
+ * Returns the current session and profile completion status for the dashboard bootstrap.
+ *
+ * @param {import('express').Request} req Incoming HTTP request.
+ * @param {import('express').Response} res Outgoing HTTP response.
+ * @returns {void}
+ */
 function sessionDetails(req, res) {
   const userId = req.session.userId;
   if (!userId) {

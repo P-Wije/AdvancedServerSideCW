@@ -302,9 +302,9 @@
           }
         },
         {
-          "name": "Save My Profile",
+          "name": "Replace Core Profile",
           "request": {
-            "method": "POST",
+            "method": "PUT",
             "header": [
               {
                 "key": "x-csrf-token",
@@ -335,29 +335,9 @@
                   "type": "text"
                 },
                 {
-                  "key": "degrees",
-                  "value": "[{\"title\":\"BSc Computer Science\",\"referenceUrl\":\"https://eastminster.ac.uk/degrees/computer-science\",\"completionDate\":\"2023-06-01\"}]",
-                  "type": "text"
-                },
-                {
-                  "key": "certifications",
-                  "value": "[{\"title\":\"AWS Certified Developer\",\"referenceUrl\":\"https://aws.amazon.com/certification/\",\"completionDate\":\"2025-02-01\"}]",
-                  "type": "text"
-                },
-                {
-                  "key": "licences",
-                  "value": "[{\"title\":\"PRINCE2 Practitioner\",\"referenceUrl\":\"https://www.peoplecert.org/\",\"completionDate\":\"2024-11-15\"}]",
-                  "type": "text"
-                },
-                {
-                  "key": "courses",
-                  "value": "[{\"title\":\"Product Strategy Sprint\",\"referenceUrl\":\"https://example.com/course/product-strategy\",\"completionDate\":\"2024-08-10\"}]",
-                  "type": "text"
-                },
-                {
-                  "key": "employmentHistory",
-                  "value": "[{\"employer\":\"Phantasmagoria Ltd\",\"jobTitle\":\"AR Platform Engineer\",\"startDate\":\"2024-01-01\",\"endDate\":\"\"}]",
-                  "type": "text"
+                  "key": "profileImage",
+                  "type": "file",
+                  "src": ""
                 }
               ]
             },
@@ -369,6 +349,165 @@
               "path": [
                 "profile",
                 "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Replace Degrees",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entries\": [\n    {\n      \"title\": \"BSc Computer Science\",\n      \"referenceUrl\": \"https://eastminster.ac.uk/degrees/computer-science\",\n      \"completionDate\": \"2023-06-01\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/profile/me/achievements/degree",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "profile",
+                "me",
+                "achievements",
+                "degree"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Replace Certifications",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entries\": [\n    {\n      \"title\": \"AWS Certified Developer\",\n      \"referenceUrl\": \"https://aws.amazon.com/certification/\",\n      \"completionDate\": \"2025-02-01\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/profile/me/achievements/certification",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "profile",
+                "me",
+                "achievements",
+                "certification"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Replace Licences",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entries\": [\n    {\n      \"title\": \"PRINCE2 Practitioner\",\n      \"referenceUrl\": \"https://www.peoplecert.org/\",\n      \"completionDate\": \"2024-11-15\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/profile/me/achievements/licence",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "profile",
+                "me",
+                "achievements",
+                "licence"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Replace Courses",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entries\": [\n    {\n      \"title\": \"Product Strategy Sprint\",\n      \"referenceUrl\": \"https://example.com/course/product-strategy\",\n      \"completionDate\": \"2024-08-10\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/profile/me/achievements/course",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "profile",
+                "me",
+                "achievements",
+                "course"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Replace Employment History",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entries\": [\n    {\n      \"employer\": \"Phantasmagoria Ltd\",\n      \"jobTitle\": \"AR Platform Engineer\",\n      \"startDate\": \"2024-01-01\",\n      \"endDate\": \"\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/profile/me/employment-history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "profile",
+                "me",
+                "employment-history"
               ]
             }
           }

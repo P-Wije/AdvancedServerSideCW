@@ -1,16 +1,34 @@
 const db = require('../db');
+const logger = require('../lib/logger');
 const { getBidForUserAndDate, getBidsForUser, getHighestActiveBid, getMonthlyWinCount, hasMonthlyEventBonus } = require('../lib/repositories');
 const { addDays, monthBounds, monthKey, toDateOnly } = require('../lib/time');
 
+/**
+ * Returns the ISO date for tomorrow's featured bidding slot.
+ *
+ * @returns {string} YYYY-MM-DD date string for the next bidding target.
+ */
 function currentTargetDate() {
   return toDateOnly(addDays(new Date(), 1));
 }
 
+/**
+ * Indicates whether today's blind bidding round has closed.
+ *
+ * @returns {boolean} True once local time is 6 PM or later.
+ */
 function biddingClosesAtSixPm() {
   const now = new Date();
   return now.getHours() >= 18;
 }
 
+/**
+ * Calculates the monthly appearance allowance for a given user and target month.
+ *
+ * @param {number} userId Alumni user id.
+ * @param {string} targetDate Target featured date in YYYY-MM-DD format.
+ * @returns {{month: string, wins: number, maxWins: number, remaining: number, hasBonus: boolean}} Monthly allowance summary.
+ */
 function getMonthlyAllowance(userId, targetDate) {
   const target = new Date(`${targetDate}T00:00:00Z`);
   const bounds = monthBounds(target);
@@ -27,6 +45,13 @@ function getMonthlyAllowance(userId, targetDate) {
   };
 }
 
+/**
+ * Resolves the current winning bid for a target date from scheduled or active records.
+ *
+ * @param {string} targetDate Target featured date in YYYY-MM-DD format.
+ * @param {Record<string, unknown>|undefined} selectedSlot Existing scheduled slot, if any.
+ * @returns {Record<string, unknown>|undefined} Winning bid row when found.
+ */
 function getHighestBidForTargetDate(targetDate, selectedSlot) {
   if (selectedSlot) {
     return db.prepare('SELECT * FROM bids WHERE id = ?').get(selectedSlot.bid_id);
@@ -35,6 +60,13 @@ function getHighestBidForTargetDate(targetDate, selectedSlot) {
   return getHighestActiveBid(targetDate);
 }
 
+/**
+ * Converts bid state into a blind feedback label for the dashboard.
+ *
+ * @param {Record<string, unknown>|undefined} myBid Signed-in user's bid row.
+ * @param {Record<string, unknown>|undefined} highestBid Winning bid row for the target date.
+ * @returns {'winning'|'not-winning'|'no-active-bid'} Blind bidding feedback.
+ */
 function getBidFeedback(myBid, highestBid) {
   if (!myBid) {
     return 'no-active-bid';
@@ -47,6 +79,13 @@ function getBidFeedback(myBid, highestBid) {
   return 'not-winning';
 }
 
+/**
+ * Builds the blind bid summary returned to the client.
+ *
+ * @param {Record<string, unknown>|undefined} myBid Signed-in user's bid row.
+ * @param {Record<string, unknown>|undefined} highestBid Winning bid row for the target date.
+ * @returns {{hasBid: boolean, isWinning: boolean, currentBidAmount: number|null, status: string, feedback: string}} Blind bid status payload.
+ */
 function buildBlindStatus(myBid, highestBid) {
   return {
     hasBid: Boolean(myBid),
@@ -57,6 +96,13 @@ function buildBlindStatus(myBid, highestBid) {
   };
 }
 
+/**
+ * Returns the bidding dashboard overview for the signed-in alumnus.
+ *
+ * @param {import('express').Request} req Incoming HTTP request.
+ * @param {import('express').Response} res Outgoing HTTP response.
+ * @returns {void}
+ */
 function overview(req, res) {
   const targetDate = currentTargetDate();
   const allowance = getMonthlyAllowance(req.user.id, targetDate);
@@ -75,6 +121,13 @@ function overview(req, res) {
   });
 }
 
+/**
+ * Places a new blind bid or increases the user's current bid for tomorrow's slot.
+ *
+ * @param {import('express').Request} req Incoming HTTP request.
+ * @param {import('express').Response} res Outgoing HTTP response.
+ * @returns {void}
+ */
 function placeBid(req, res) {
   const targetDate = currentTargetDate();
   if (biddingClosesAtSixPm() || db.prepare('SELECT id FROM featured_slots WHERE target_date = ?').get(targetDate)) {
@@ -110,6 +163,13 @@ function placeBid(req, res) {
     `).run(req.user.id, targetDate, amount);
   }
 
+  logger.info('Saved blind bid.', {
+    userId: req.user.id,
+    targetDate,
+    amount,
+    updatedExistingBid: Boolean(existingBid),
+  });
+
   const responseStatus = existingBid ? 200 : 201;
   const responseMessage = existingBid ? 'Bid increased successfully.' : 'Bid placed successfully.';
 
@@ -122,6 +182,13 @@ function placeBid(req, res) {
   });
 }
 
+/**
+ * Builds the summary payload reused after bid mutations.
+ *
+ * @param {number} userId Alumni user id.
+ * @param {string} targetDate Target featured date in YYYY-MM-DD format.
+ * @returns {{biddingOpen: boolean, blindStatus: object, monthlyAllowance: object, history: Array<object>}} Overview payload.
+ */
 function overviewPayload(userId, targetDate) {
   const allowance = getMonthlyAllowance(userId, targetDate);
   const myBid = getBidForUserAndDate(userId, targetDate);
@@ -136,6 +203,13 @@ function overviewPayload(userId, targetDate) {
   };
 }
 
+/**
+ * Cancels an active bid before the daily cut-off.
+ *
+ * @param {import('express').Request} req Incoming HTTP request.
+ * @param {import('express').Response} res Outgoing HTTP response.
+ * @returns {void}
+ */
 function cancelBid(req, res) {
   const bidId = Number(req.params.id);
   const bid = db.prepare('SELECT * FROM bids WHERE id = ? AND user_id = ?').get(bidId, req.user.id);
@@ -158,15 +232,34 @@ function cancelBid(req, res) {
     WHERE id = ?
   `).run(bidId);
 
+  logger.info('Cancelled blind bid.', {
+    userId: req.user.id,
+    bidId,
+  });
+
   return res.json({ message: 'Bid cancelled successfully.' });
 }
 
+/**
+ * Returns a longer bid history for the signed-in alumnus.
+ *
+ * @param {import('express').Request} req Incoming HTTP request.
+ * @param {import('express').Response} res Outgoing HTTP response.
+ * @returns {void}
+ */
 function history(req, res) {
   return res.json({
     bids: getBidsForUser(req.user.id, 50),
   });
 }
 
+/**
+ * Records alumni event participation to unlock an extra monthly featured-slot allowance.
+ *
+ * @param {import('express').Request} req Incoming HTTP request.
+ * @param {import('express').Response} res Outgoing HTTP response.
+ * @returns {void}
+ */
 function registerEventParticipation(req, res) {
   const month = monthKey(new Date(`${req.body.participatedOn}T00:00:00Z`));
   db.prepare(`
@@ -176,6 +269,12 @@ function registerEventParticipation(req, res) {
       event_name = excluded.event_name,
       participated_on = excluded.participated_on
   `).run(req.user.id, req.body.eventName, req.body.participatedOn, month);
+
+  logger.info('Recorded alumni event participation bonus.', {
+    userId: req.user.id,
+    eventName: req.body.eventName,
+    month,
+  });
 
   return res.status(201).json({
     message: 'Event participation recorded. This unlocks a fourth featured-slot opportunity for that month.',
