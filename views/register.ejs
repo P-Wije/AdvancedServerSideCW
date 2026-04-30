@@ -1,0 +1,32 @@
+<section class="card narrow">
+  <h1>Create your account</h1>
+  <p class="muted">Use your @<%= universityDomain %> email address.</p>
+  <% errors.forEach(err => { %>
+    <div class="alert alert-error"><strong><%= err.field %>:</strong> <%= err.message %></div>
+  <% }); %>
+  <form method="post" action="/register" class="stack">
+    <%- include('partials/csrf') %>
+    <label class="field">
+      <span>Email</span>
+      <input type="email" name="email" required value="<%= formValues.email || '' %>">
+    </label>
+    <label class="field">
+      <span>Password</span>
+      <input type="password" name="password" required minlength="12" autocomplete="new-password">
+      <small class="muted">At least 12 characters with upper, lower, number, and symbol.</small>
+    </label>
+    <fieldset class="field">
+      <legend>I am registering as</legend>
+      <label class="radio-row">
+        <input type="radio" name="role" value="alumni" <%= (formValues.role || 'alumni') === 'alumni' ? 'checked' : '' %>>
+        <span>An alumnus building a profile and bidding for featured slots.</span>
+      </label>
+      <label class="radio-row">
+        <input type="radio" name="role" value="university_staff" <%= formValues.role === 'university_staff' ? 'checked' : '' %>>
+        <span>University staff or faculty accessing the analytics dashboard.</span>
+      </label>
+    </fieldset>
+    <button type="submit" class="primary-button">Create account</button>
+  </form>
+  <p class="muted small">Already registered? <a href="/login">Sign in</a>.</p>
+</section>

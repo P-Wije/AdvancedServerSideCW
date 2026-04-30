@@ -72,7 +72,7 @@ function parseCollectionPayload(value) {
 /**
  * Validates the core one-to-one profile resource payload.
  *
- * @param {{firstName: string, lastName: string, biography: string, linkedinUrl: string}} payload Core profile payload.
+ * @param {{firstName: string, lastName: string, biography: string, linkedinUrl: string, programme?: string, graduationDate?: string}} payload Core profile payload.
  * @returns {Array<{field: string, message: string}>} Validation error list.
  */
 function validateCoreProfile(payload) {
@@ -89,6 +89,12 @@ function validateCoreProfile(payload) {
   }
   if (!isHttpUrl(payload.linkedinUrl) || !payload.linkedinUrl.includes('linkedin.com')) {
     errors.push({ field: 'linkedinUrl', message: 'Provide a valid LinkedIn profile URL.' });
+  }
+  if (payload.programme && payload.programme.length > 120) {
+    errors.push({ field: 'programme', message: 'Programme name must be under 120 characters.' });
+  }
+  if (payload.graduationDate && Number.isNaN(Date.parse(payload.graduationDate))) {
+    errors.push({ field: 'graduationDate', message: 'Graduation date must be a valid date.' });
   }
 
   return errors;
@@ -151,10 +157,6 @@ function validateEmploymentCollection(entries) {
 
 /**
  * Returns the aggregated signed-in alumni profile.
- *
- * @param {import('express').Request} req Incoming HTTP request.
- * @param {import('express').Response} res Outgoing HTTP response.
- * @returns {void}
  */
 function getMyProfile(req, res) {
   return res.json({
@@ -164,10 +166,6 @@ function getMyProfile(req, res) {
 
 /**
  * Replaces the core profile resource and optional profile image.
- *
- * @param {import('express').Request} req Incoming HTTP request.
- * @param {import('express').Response} res Outgoing HTTP response.
- * @returns {void}
  */
 function replaceCoreProfile(req, res) {
   const payload = {
@@ -175,6 +173,9 @@ function replaceCoreProfile(req, res) {
     lastName: sanitizeText(req.body.lastName),
     biography: sanitizeText(req.body.biography),
     linkedinUrl: String(req.body.linkedinUrl || '').trim(),
+    programme: sanitizeText(req.body.programme),
+    graduationDate: String(req.body.graduationDate || '').trim(),
+    directoryVisible: req.body.directoryVisible === false || req.body.directoryVisible === 'false' ? 0 : 1,
   };
 
   const validationErrors = validateCoreProfile(payload);
@@ -188,14 +189,18 @@ function replaceCoreProfile(req, res) {
   const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
 
   db.prepare(`
-    INSERT INTO profiles (user_id, first_name, last_name, biography, linkedin_url, profile_image_path, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    INSERT INTO profiles (user_id, first_name, last_name, biography, linkedin_url, profile_image_path,
+                          programme, graduation_date, directory_visible, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     ON CONFLICT(user_id) DO UPDATE SET
       first_name = excluded.first_name,
       last_name = excluded.last_name,
       biography = excluded.biography,
       linkedin_url = excluded.linkedin_url,
       profile_image_path = COALESCE(excluded.profile_image_path, profiles.profile_image_path),
+      programme = excluded.programme,
+      graduation_date = excluded.graduation_date,
+      directory_visible = excluded.directory_visible,
       updated_at = CURRENT_TIMESTAMP
   `).run(
     req.user.id,
@@ -204,11 +209,15 @@ function replaceCoreProfile(req, res) {
     payload.biography,
     payload.linkedinUrl,
     imagePath,
+    payload.programme || null,
+    payload.graduationDate || null,
+    payload.directoryVisible,
   );
 
   logger.info('Updated core alumni profile.', {
     userId: req.user.id,
     hasImageUpload: Boolean(imagePath),
+    programme: payload.programme || null,
   });
 
   return res.json({
@@ -219,10 +228,6 @@ function replaceCoreProfile(req, res) {
 
 /**
  * Replaces one achievement collection such as degrees or certifications.
- *
- * @param {import('express').Request} req Incoming HTTP request.
- * @param {import('express').Response} res Outgoing HTTP response.
- * @returns {void}
  */
 function replaceAchievementCollection(req, res) {
   const achievementType = req.params.type;
@@ -277,9 +282,9 @@ function replaceAchievementCollection(req, res) {
 /**
  * Replaces the employment history collection for the signed-in user.
  *
- * @param {import('express').Request} req Incoming HTTP request.
- * @param {import('express').Response} res Outgoing HTTP response.
- * @returns {void}
+ * Each row gets its `is_current` flag derived from the absence of an end date.
+ * Together with `industry_sector` and `location_*` columns, this powers the
+ * analytics dashboard queries.
  */
 function replaceEmploymentHistory(req, res) {
   const entries = parseCollectionPayload(req.body.entries);
@@ -303,12 +308,24 @@ function replaceEmploymentHistory(req, res) {
     db.prepare('DELETE FROM employment_history WHERE user_id = ?').run(req.user.id);
 
     const insertEmployment = db.prepare(`
-      INSERT INTO employment_history (user_id, employer, job_title, start_date, end_date)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO employment_history (user_id, employer, job_title, start_date, end_date,
+                                       industry_sector, location_country, location_city, is_current)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     normalizedEntries.forEach((entry) => {
-      insertEmployment.run(req.user.id, entry.employer, entry.jobTitle, entry.startDate, entry.endDate || null);
+      const isCurrent = !entry.endDate ? 1 : 0;
+      insertEmployment.run(
+        req.user.id,
+        entry.employer,
+        entry.jobTitle,
+        entry.startDate,
+        entry.endDate || null,
+        entry.industrySector || null,
+        entry.locationCountry || null,
+        entry.locationCity || null,
+        isCurrent,
+      );
     });
   });
 

@@ -12,7 +12,36 @@ db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
 /**
+ * Returns true when the named column already exists on a table.
+ *
+ * @param {string} table Table name to inspect.
+ * @param {string} column Column name to check.
+ * @returns {boolean}
+ */
+function columnExists(table, column) {
+  return db.prepare(`PRAGMA table_info(${table})`).all().some((row) => row.name === column);
+}
+
+/**
+ * Adds a column when it is absent so the migration block stays idempotent.
+ *
+ * @param {string} table Target table name.
+ * @param {string} column Column name to add.
+ * @param {string} ddl Column DDL fragment (everything after the column name).
+ */
+function addColumnIfMissing(table, column, ddl) {
+  if (!columnExists(table, column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
+    logger.info('Schema migration applied: added column.', { table, column });
+  }
+}
+
+/**
  * Creates the relational schema and indexes required by the application.
+ *
+ * Tables are declared with CREATE TABLE IF NOT EXISTS so every boot is safe.
+ * Additional columns added in later iterations are applied through
+ * `addColumnIfMissing` so existing databases upgrade without manual steps.
  *
  * @returns {void}
  */
@@ -108,7 +137,7 @@ function initializeDatabase() {
       name TEXT NOT NULL,
       token_prefix TEXT NOT NULL,
       token_hash TEXT NOT NULL UNIQUE,
-      scopes TEXT NOT NULL DEFAULT 'featured:read',
+      scopes TEXT NOT NULL DEFAULT 'read:alumni_of_day',
       revoked_at TEXT,
       last_used_at TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -127,12 +156,49 @@ function initializeDatabase() {
       FOREIGN KEY (api_token_id) REFERENCES api_tokens(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS analytics_filter_presets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      filters_json TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
     CREATE INDEX IF NOT EXISTS idx_achievements_user_type ON achievements(user_id, achievement_type);
     CREATE INDEX IF NOT EXISTS idx_employment_user ON employment_history(user_id);
     CREATE INDEX IF NOT EXISTS idx_bids_target_status_amount ON bids(target_date, status, amount DESC, updated_at ASC);
     CREATE INDEX IF NOT EXISTS idx_bids_user_target ON bids(user_id, target_date);
     CREATE INDEX IF NOT EXISTS idx_featured_slots_target_status ON featured_slots(target_date, status);
     CREATE INDEX IF NOT EXISTS idx_api_token_usage_token_created ON api_token_usage(api_token_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_filter_presets_user ON analytics_filter_presets(user_id);
+  `);
+
+  // Additive migrations: run on every boot, only ALTER when columns are missing.
+  addColumnIfMissing('users', 'role', "TEXT NOT NULL DEFAULT 'alumni'");
+  addColumnIfMissing('profiles', 'programme', 'TEXT');
+  addColumnIfMissing('profiles', 'graduation_date', 'TEXT');
+  addColumnIfMissing('profiles', 'directory_visible', 'INTEGER NOT NULL DEFAULT 1');
+  addColumnIfMissing('employment_history', 'industry_sector', 'TEXT');
+  addColumnIfMissing('employment_history', 'location_country', 'TEXT');
+  addColumnIfMissing('employment_history', 'location_city', 'TEXT');
+  addColumnIfMissing('employment_history', 'is_current', 'INTEGER NOT NULL DEFAULT 0');
+
+  // Backfill is_current from end_date so legacy rows participate in analytics.
+  db.exec(`
+    UPDATE employment_history
+       SET is_current = CASE WHEN end_date IS NULL OR end_date = '' THEN 1 ELSE 0 END
+     WHERE is_current = 0 AND (end_date IS NULL OR end_date = '');
+  `);
+
+  // Migrate legacy 'featured:read' tokens to the new 'read:alumni_of_day' scope without forcing reissue.
+  db.exec("UPDATE api_tokens SET scopes = 'read:alumni_of_day' WHERE scopes = 'featured:read';");
+
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_profiles_programme_grad ON profiles(programme, graduation_date);
+    CREATE INDEX IF NOT EXISTS idx_employment_sector ON employment_history(industry_sector);
+    CREATE INDEX IF NOT EXISTS idx_employment_user_current ON employment_history(user_id, is_current);
+    CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
   `);
 }
 

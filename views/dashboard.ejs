@@ -1,0 +1,63 @@
+<% if (role === 'university_staff') { %>
+  <section class="page-header">
+    <h1>University analytics dashboard</h1>
+    <p class="muted">Live alumni data sourced from the influencer marketplace, ready for curriculum and strategic planning.</p>
+  </section>
+  <%- include('partials/filter-form', { formAction: '/dashboard' }) %>
+  <section class="kpi-grid">
+    <div class="kpi-card"><span class="kpi-value"><%= summary.totalAlumni %></span><span class="kpi-label">Total alumni</span></div>
+    <div class="kpi-card"><span class="kpi-value"><%= summary.programmesCount %></span><span class="kpi-label">Programmes covered</span></div>
+    <div class="kpi-card"><span class="kpi-value"><%= summary.employedNow %></span><span class="kpi-label">Currently employed</span></div>
+    <div class="kpi-card"><span class="kpi-value"><%= summary.sectorsCount %></span><span class="kpi-label">Industry sectors</span></div>
+  </section>
+  <section class="card">
+    <h2>Get oriented</h2>
+    <ul class="nav-cards">
+      <li><a href="/analytics">Analytics &rarr;</a> 8 interactive charts with insight badges and CSV/PDF export.</li>
+      <li><a href="/alumni">Alumni directory &rarr;</a> filter the cohort by programme, graduation date, sector, and country.</li>
+      <li><a href="/analytics/report.pdf">Download full PDF report</a> assembled from current filters.</li>
+    </ul>
+  </section>
+<% } else { %>
+  <section class="page-header">
+    <h1>My alumni dashboard</h1>
+    <p class="muted">Your one-stop landing page for profile completion and bidding status.</p>
+  </section>
+  <section class="card">
+    <h2>Profile completion</h2>
+    <div class="progress-bar"><span style="width: <%= completionPercent %>%"></span></div>
+    <p class="muted small"><%= completionPercent %>% complete. <a href="/profile">Edit profile</a>.</p>
+    <% if (!profile) { %>
+      <p>Your profile has not been started yet. <a href="/profile">Add your details</a> so sponsors can find you.</p>
+    <% } else { %>
+      <ul class="bullet-list">
+        <li><strong>Programme:</strong> <%= profile.programme || 'Not yet specified' %></li>
+        <li><strong>Graduation date:</strong> <%= profile.graduationDate || 'Not yet specified' %></li>
+        <li><strong>Degrees:</strong> <%= profile.degrees.length %></li>
+        <li><strong>Certifications:</strong> <%= profile.certifications.length %></li>
+        <li><strong>Employment history:</strong> <%= profile.employmentHistory.length %> entries</li>
+      </ul>
+    <% } %>
+  </section>
+  <section class="card">
+    <h2>Recent bids</h2>
+    <% if (!bids.length) { %>
+      <p class="muted">No bids yet. <a href="/bidding">Place your first bid</a> for tomorrow's featured slot.</p>
+    <% } else { %>
+      <table class="data-table">
+        <thead><tr><th>Target date</th><th>Amount</th><th>Status</th><th>Updated</th></tr></thead>
+        <tbody>
+          <% bids.forEach(b => { %>
+            <tr>
+              <td><%= b.targetDate %></td>
+              <td>£<%= Number(b.amount).toFixed(2) %></td>
+              <td><span class="bid-status bid-status-<%= b.status %>"><%= b.status %></span></td>
+              <td><%= b.updatedAt %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+    <p><a href="/bidding" class="primary-button">Manage bids</a></p>
+  </section>
+<% } %>

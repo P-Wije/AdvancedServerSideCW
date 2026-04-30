@@ -1,0 +1,104 @@
+<section class="page-header">
+  <h1>My profile</h1>
+  <p class="muted">Build a strong profile to attract sponsors and win featured slots.</p>
+</section>
+
+<% errors.forEach(err => { %>
+  <div class="alert alert-error"><strong><%= err.field %>:</strong> <%= err.message %></div>
+<% }); %>
+
+<section class="card">
+  <h2>Core details</h2>
+  <form method="post" action="/profile" enctype="multipart/form-data" class="stack">
+    <%- include('partials/csrf') %>
+    <div class="form-grid">
+      <label class="field">
+        <span>First name</span>
+        <input type="text" name="firstName" required maxlength="80" value="<%= (profile && profile.firstName) || '' %>">
+      </label>
+      <label class="field">
+        <span>Last name</span>
+        <input type="text" name="lastName" required maxlength="80" value="<%= (profile && profile.lastName) || '' %>">
+      </label>
+      <label class="field full">
+        <span>Biography</span>
+        <textarea name="biography" rows="4" required minlength="30" maxlength="1200"><%= (profile && profile.biography) || '' %></textarea>
+      </label>
+      <label class="field">
+        <span>LinkedIn URL</span>
+        <input type="url" name="linkedinUrl" required value="<%= (profile && profile.linkedinUrl) || '' %>" placeholder="https://www.linkedin.com/in/...">
+      </label>
+      <label class="field">
+        <span>Programme</span>
+        <input type="text" name="programme" value="<%= (profile && profile.programme) || '' %>" placeholder="e.g. BSc Computer Science">
+      </label>
+      <label class="field">
+        <span>Graduation date</span>
+        <input type="date" name="graduationDate" value="<%= (profile && profile.graduationDate) || '' %>">
+      </label>
+      <label class="field">
+        <span>Profile image</span>
+        <input type="file" name="profileImage" accept="image/*">
+        <% if (profile && profile.profileImagePath) { %>
+          <img class="profile-thumb" src="<%= profile.profileImagePath %>" alt="Profile photo">
+        <% } %>
+      </label>
+      <label class="field checkbox-row">
+        <input type="checkbox" name="directoryVisible" <%= (!profile || profile.directoryVisible !== false) ? 'checked' : '' %>>
+        <span>Visible in the alumni directory used by university staff</span>
+      </label>
+    </div>
+    <button type="submit" class="primary-button">Save core profile</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Achievements</h2>
+  <p class="muted">Add as many as you'd like. Rows with all three fields filled will be saved; blank rows are ignored.</p>
+  <form method="post" action="/profile/achievements" class="stack">
+    <%- include('partials/csrf') %>
+    <% ['degree','certification','licence','course'].forEach(type => { %>
+      <% const groupKey = type + 's'; const collection = (profile && profile[groupKey]) || []; %>
+      <fieldset class="field">
+        <legend><%= type.charAt(0).toUpperCase() + type.slice(1) %>s</legend>
+        <div class="row-list" data-row-list data-prefix="<%= groupKey %>">
+          <% (collection.length ? collection : [{}, {}]).forEach((entry, idx) => { %>
+            <div class="row">
+              <input type="text" name="<%= groupKey %>[<%= idx %>][title]" placeholder="Title" value="<%= entry.title || '' %>">
+              <input type="url" name="<%= groupKey %>[<%= idx %>][referenceUrl]" placeholder="https://..." value="<%= entry.referenceUrl || '' %>">
+              <input type="date" name="<%= groupKey %>[<%= idx %>][completionDate]" value="<%= entry.completionDate || '' %>">
+            </div>
+          <% }); %>
+        </div>
+        <button type="button" class="ghost-button" data-add-row="<%= groupKey %>">Add another</button>
+      </fieldset>
+    <% }); %>
+    <button type="submit" class="primary-button">Save achievements</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Employment history</h2>
+  <p class="muted">Capture industry sector and location so the analytics dashboard can chart your cohort accurately.</p>
+  <form method="post" action="/profile/employment" class="stack">
+    <%- include('partials/csrf') %>
+    <% const employment = (profile && profile.employmentHistory) || [{}, {}]; %>
+    <div class="row-list" data-row-list data-prefix="employmentHistory">
+      <% (employment.length ? employment : [{}]).forEach((entry, idx) => { %>
+        <div class="row employment-row">
+          <input type="text" name="employmentHistory[<%= idx %>][employer]" placeholder="Employer" value="<%= entry.employer || '' %>">
+          <input type="text" name="employmentHistory[<%= idx %>][jobTitle]" placeholder="Job title" value="<%= entry.jobTitle || '' %>">
+          <input type="text" name="employmentHistory[<%= idx %>][industrySector]" placeholder="Industry sector" value="<%= entry.industrySector || '' %>">
+          <input type="text" name="employmentHistory[<%= idx %>][locationCountry]" placeholder="Country" value="<%= entry.locationCountry || '' %>">
+          <input type="text" name="employmentHistory[<%= idx %>][locationCity]" placeholder="City" value="<%= entry.locationCity || '' %>">
+          <input type="date" name="employmentHistory[<%= idx %>][startDate]" value="<%= entry.startDate || '' %>">
+          <input type="date" name="employmentHistory[<%= idx %>][endDate]" value="<%= entry.endDate || '' %>" placeholder="End date (leave blank if current)">
+        </div>
+      <% }); %>
+    </div>
+    <button type="button" class="ghost-button" data-add-row="employmentHistory">Add another</button>
+    <button type="submit" class="primary-button">Save employment history</button>
+  </form>
+</section>
+
+<script src="/js/repeatable-rows.js" defer></script>

@@ -1,10 +1,11 @@
 const db = require('../db');
 const logger = require('../lib/logger');
 const { getApiTokenUsage, getApiTokensForUser } = require('../lib/repositories');
+const { CLIENT_PRESETS, SCOPES, serializeScopes, validateScopes } = require('../lib/scopes');
 const { createOpaqueTokenPair } = require('../lib/security');
 
 /**
- * Lists API keys owned by the signed-in alumnus.
+ * Lists API keys owned by the signed-in user.
  *
  * @param {import('express').Request} req Incoming HTTP request.
  * @param {import('express').Response} res Outgoing HTTP response.
@@ -17,7 +18,35 @@ function listApiKeys(req, res) {
 }
 
 /**
- * Creates a new bearer token for the signed-in alumnus and returns the plain token once.
+ * Resolves the final scope list for a new API token.
+ *
+ * Priority: explicit `scopes` body field, then `clientPreset` mapping, then a
+ * default of `read:alumni_of_day` so legacy callers keep working.
+ *
+ * @param {object} body Request body payload.
+ * @returns {Array<string>} Resolved scope list.
+ */
+function resolveScopes(body) {
+  if (Array.isArray(body.scopes) && body.scopes.length) {
+    return body.scopes;
+  }
+  if (typeof body.scopes === 'string' && body.scopes.trim()) {
+    return body.scopes.split(/[\s,]+/).filter(Boolean);
+  }
+  if (body.clientPreset && CLIENT_PRESETS[body.clientPreset]?.length) {
+    return [...CLIENT_PRESETS[body.clientPreset]];
+  }
+  return [SCOPES.READ_ALUMNI_OF_DAY];
+}
+
+/**
+ * Creates a new bearer token for the signed-in user and returns the plain token once.
+ *
+ * Accepts either an explicit `scopes` array or a `clientPreset` (e.g. analytics_dashboard,
+ * ar_app, custom). The granted scope set is stored as a space-separated string on
+ * `api_tokens.scopes` and enforced by `requireScopes(...)` middleware on each protected
+ * route. The plain token value appears ONCE in the response payload because only the
+ * SHA-256 hash is persisted.
  *
  * @param {import('express').Request} req Incoming HTTP request.
  * @param {import('express').Response} res Outgoing HTTP response.
@@ -26,8 +55,16 @@ function listApiKeys(req, res) {
 function createApiKey(req, res) {
   const token = createOpaqueTokenPair();
   const name = String(req.body.name || '').trim();
-  const scopes = 'featured:read';
+  const requestedScopes = resolveScopes(req.body);
+  const validation = validateScopes(requestedScopes);
+  if (!validation.valid) {
+    return res.status(422).json({
+      message: 'One or more requested scopes are not recognised.',
+      unknown: validation.unknown,
+    });
+  }
 
+  const scopes = serializeScopes(requestedScopes);
   const result = db.prepare(`
     INSERT INTO api_tokens (created_by_user_id, name, token_prefix, token_hash, scopes)
     VALUES (?, ?, ?, ?, ?)
@@ -37,6 +74,7 @@ function createApiKey(req, res) {
     userId: req.user.id,
     apiKeyId: result.lastInsertRowid,
     name,
+    scopes,
   });
 
   return res.status(201).json({

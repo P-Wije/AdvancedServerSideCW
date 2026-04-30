@@ -3,7 +3,7 @@
     "_postman_id": "db04f36d-4787-4d7c-a121-89c74267e19d",
     "name": "Alumni Influencers API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Postman collection for the Alumni Influencers coursework API."
+    "description": "Postman collection for the Alumni Influencers API."
   },
   "item": [
     {
@@ -769,6 +769,235 @@
               ]
             }
           }
+        }
+      ]
+    },
+    {
+      "name": "Analytics Dashboard",
+      "description": "Bearer-token endpoints used by the University Analytics Dashboard. All require an API key holding the `read:analytics` scope (preset client = analytics_dashboard). Set {{analyticsBearer}} from the Developer > Create API Key request after selecting that preset.",
+      "item": [
+        {
+          "name": "Summary KPIs",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{analyticsBearer}}" }],
+            "url": { "raw": "{{baseUrl}}/api/analytics/summary", "host": ["{{baseUrl}}"], "path": ["api", "analytics", "summary"] }
+          }
+        },
+        {
+          "name": "Employment by Industry Sector",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{analyticsBearer}}" }],
+            "url": { "raw": "{{baseUrl}}/api/analytics/employment-by-sector", "host": ["{{baseUrl}}"], "path": ["api", "analytics", "employment-by-sector"] }
+          }
+        },
+        {
+          "name": "Employment by Sector (CSV export)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{analyticsBearer}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/employment-by-sector?format=csv",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "employment-by-sector"],
+              "query": [{ "key": "format", "value": "csv" }]
+            }
+          }
+        },
+        {
+          "name": "Top Job Titles",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{analyticsBearer}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/job-titles?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "job-titles"],
+              "query": [{ "key": "limit", "value": "10" }]
+            }
+          }
+        },
+        {
+          "name": "Top Employers",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{analyticsBearer}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/top-employers?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "top-employers"],
+              "query": [{ "key": "limit", "value": "10" }]
+            }
+          }
+        },
+        {
+          "name": "Geographic Distribution",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{analyticsBearer}}" }],
+            "url": { "raw": "{{baseUrl}}/api/analytics/geographic", "host": ["{{baseUrl}}"], "path": ["api", "analytics", "geographic"] }
+          }
+        },
+        {
+          "name": "Skills Gap (programme x sector)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{analyticsBearer}}" }],
+            "url": { "raw": "{{baseUrl}}/api/analytics/skills-gap", "host": ["{{baseUrl}}"], "path": ["api", "analytics", "skills-gap"] }
+          }
+        },
+        {
+          "name": "Professional Development Trends",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{analyticsBearer}}" }],
+            "url": { "raw": "{{baseUrl}}/api/analytics/professional-development", "host": ["{{baseUrl}}"], "path": ["api", "analytics", "professional-development"] }
+          }
+        },
+        {
+          "name": "Curriculum Coverage",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{analyticsBearer}}" }],
+            "url": { "raw": "{{baseUrl}}/api/analytics/curriculum-coverage", "host": ["{{baseUrl}}"], "path": ["api", "analytics", "curriculum-coverage"] }
+          }
+        },
+        {
+          "name": "Cohort Trend",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{analyticsBearer}}" }],
+            "url": { "raw": "{{baseUrl}}/api/analytics/cohort-trend", "host": ["{{baseUrl}}"], "path": ["api", "analytics", "cohort-trend"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Alumni Directory",
+      "description": "Bearer-token endpoints used by the analytics dashboard's filterable alumni listing. Requires `read:alumni` scope.",
+      "item": [
+        {
+          "name": "List alumni",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{analyticsBearer}}" }],
+            "url": { "raw": "{{baseUrl}}/api/alumni", "host": ["{{baseUrl}}"], "path": ["api", "alumni"] }
+          }
+        },
+        {
+          "name": "Filter by programme + graduation range",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{analyticsBearer}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/alumni?programme=BSc Computer Science&graduationFrom=2020-01-01&graduationTo=2024-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alumni"],
+              "query": [
+                { "key": "programme", "value": "BSc Computer Science" },
+                { "key": "graduationFrom", "value": "2020-01-01" },
+                { "key": "graduationTo", "value": "2024-12-31" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter by industry sector",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{analyticsBearer}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/alumni?sector=Technology",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alumni"],
+              "query": [{ "key": "sector", "value": "Technology" }]
+            }
+          }
+        },
+        {
+          "name": "CSV export",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{analyticsBearer}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/alumni?format=csv",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alumni"],
+              "query": [{ "key": "format", "value": "csv" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "API Key Scoping Demo",
+      "description": "Demonstrates the rubric requirement: an Analytics Dashboard key cannot access the AR endpoint and vice versa. Each request below should return 403 with a `missing` array except the matched request which returns 200.",
+      "item": [
+        {
+          "name": "Analytics token hitting AR endpoint (expect 403)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{analyticsBearer}}" }],
+            "url": { "raw": "{{baseUrl}}/api/public/featured/today", "host": ["{{baseUrl}}"], "path": ["api", "public", "featured", "today"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Returns 403 because token lacks read:alumni_of_day', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "  pm.expect(pm.response.json().missing).to.include('read:alumni_of_day');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "AR token hitting Analytics endpoint (expect 403)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{arBearer}}" }],
+            "url": { "raw": "{{baseUrl}}/api/analytics/summary", "host": ["{{baseUrl}}"], "path": ["api", "analytics", "summary"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Returns 403 because token lacks read:analytics', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "  pm.expect(pm.response.json().missing).to.include('read:analytics');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "AR token hitting AR endpoint (expect 200 or 404)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{arBearer}}" }],
+            "url": { "raw": "{{baseUrl}}/api/public/featured/today", "host": ["{{baseUrl}}"], "path": ["api", "public", "featured", "today"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Scope satisfied (200 or 404 if no slot is active)', function () {",
+                  "  pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     }

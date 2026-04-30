@@ -1,0 +1,116 @@
+/* Analytics-specific layout: hub grid, chart card, insight badges. */
+
+.filter-form {
+  background: var(--panel);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow);
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 18px;
+}
+
+.chart-tile {
+  display: block;
+  background: white;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.chart-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  border-color: var(--accent-soft);
+}
+.chart-tile h3 { margin: 0 0 6px; font-size: 1.05rem; }
+
+.chart-mini {
+  height: 240px;
+  margin-top: 10px;
+  position: relative;
+}
+
+.chart-card {
+  /* Let the detail-page card stretch to full content width and breathe. */
+  padding: 26px 28px;
+}
+
+.chart-card .chart-canvas-wrapper {
+  position: relative;
+  height: 620px;
+  margin-top: 12px;
+}
+
+@media (max-width: 720px) {
+  .chart-card .chart-canvas-wrapper { height: 420px; }
+  .chart-mini { height: 200px; }
+}
+
+.chart-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chart-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chart-type-pill {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.badge-critical {
+  background: rgba(180, 35, 24, 0.15);
+  color: var(--danger);
+}
+.badge-significant {
+  background: rgba(184, 98, 0, 0.18);
+  color: var(--warning);
+}
+.badge-emerging {
+  background: rgba(30, 64, 175, 0.15);
+  color: var(--info);
+}
+.badge-healthy {
+  background: rgba(20, 108, 67, 0.18);
+  color: var(--success);
+}
