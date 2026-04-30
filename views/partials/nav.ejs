@@ -1,0 +1,34 @@
+<header class="site-nav">
+  <div class="nav-inner">
+    <a class="brand" href="/">
+      <span class="brand-mark">UoE</span>
+      <span class="brand-name">Alumni Influencers</span>
+    </a>
+    <nav>
+      <ul class="nav-links">
+        <% if (currentUser) { %>
+          <% if (currentUser.role === 'university_staff') { %>
+            <li><a href="/dashboard" class="<%= currentPath === '/dashboard' ? 'active' : '' %>">Dashboard</a></li>
+            <li><a href="/analytics" class="<%= currentPath.startsWith('/analytics') ? 'active' : '' %>">Analytics</a></li>
+            <li><a href="/alumni" class="<%= currentPath.startsWith('/alumni') ? 'active' : '' %>">Alumni</a></li>
+          <% } else { %>
+            <li><a href="/dashboard" class="<%= currentPath === '/dashboard' ? 'active' : '' %>">Dashboard</a></li>
+            <li><a href="/profile" class="<%= currentPath === '/profile' ? 'active' : '' %>">Profile</a></li>
+            <li><a href="/bidding" class="<%= currentPath === '/bidding' ? 'active' : '' %>">Bidding</a></li>
+            <li><a href="/developer/api-keys" class="<%= currentPath.startsWith('/developer/api-keys') ? 'active' : '' %>">Developer Keys</a></li>
+          <% } %>
+          <li class="nav-user">
+            <span class="nav-email"><%= currentUser.email %></span>
+            <form method="post" action="/logout" class="inline-form">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button type="submit" class="ghost-button">Sign out</button>
+            </form>
+          </li>
+        <% } else { %>
+          <li><a href="/login" class="<%= currentPath === '/login' ? 'active' : '' %>">Sign in</a></li>
+          <li><a href="/register" class="<%= currentPath === '/register' ? 'active' : '' %>">Register</a></li>
+        <% } %>
+      </ul>
+    </nav>
+  </div>
+</header>

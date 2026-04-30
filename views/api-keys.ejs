@@ -1,0 +1,98 @@
+<section class="page-header">
+  <h1>Developer API keys</h1>
+  <p class="muted">Mint scoped bearer tokens for the Mobile AR App, the Analytics Dashboard, or your own integration. Tokens are stored as a SHA-256 hash, so copy the plain value now because it cannot be recovered later.</p>
+</section>
+
+<% if (justCreated) { %>
+  <section class="card success-card">
+    <h2>New API key, copy it now</h2>
+    <p><strong>Name:</strong> <%= justCreated.name %></p>
+    <p><strong>Scopes:</strong> <%= justCreated.scopes %></p>
+    <pre class="token-box" id="plain-token"><%= justCreated.plainToken %></pre>
+    <button type="button" class="ghost-button" onclick="navigator.clipboard.writeText(document.getElementById('plain-token').innerText)">Copy to clipboard</button>
+  </section>
+<% } %>
+
+<section class="card">
+  <h2>Create a new key</h2>
+  <form method="post" action="/developer/api-keys" class="stack">
+    <%- include('partials/csrf') %>
+    <label class="field">
+      <span>Name</span>
+      <input type="text" name="name" required minlength="3" maxlength="80" placeholder="e.g. Mobile AR App (production)">
+    </label>
+    <label class="field">
+      <span>Client preset</span>
+      <select name="clientPreset" id="client-preset">
+        <option value="">Custom (pick scopes manually)</option>
+        <% clientPresets.filter(p => p !== 'custom').forEach(p => { %>
+          <option value="<%= p %>"><%= p.replace('_', ' ') %> (<%= presetMap[p].join(', ') %>)</option>
+        <% }); %>
+      </select>
+    </label>
+    <fieldset class="field">
+      <legend>Scopes</legend>
+      <% scopes.forEach(scope => { %>
+        <label class="checkbox-row">
+          <input type="checkbox" name="scopes" value="<%= scope %>">
+          <code><%= scope %></code>
+        </label>
+      <% }); %>
+    </fieldset>
+    <button type="submit" class="primary-button">Generate key</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Existing keys</h2>
+  <% if (!apiKeys.length) { %>
+    <p class="muted">No keys yet.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Prefix</th><th>Scopes</th><th>Usage</th><th>Last used</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        <% apiKeys.forEach(key => { %>
+          <tr>
+            <td><%= key.name %></td>
+            <td><code><%= key.tokenPrefix %>...</code></td>
+            <td><code><%= key.scopes %></code></td>
+            <td><%= key.usageCount %></td>
+            <td><%= key.lastUsedAt || '-' %></td>
+            <td>
+              <% if (key.revokedAt) { %>
+                <span class="badge badge-significant">revoked</span>
+              <% } else { %>
+                <span class="badge badge-emerging">active</span>
+              <% } %>
+            </td>
+            <td>
+              <a href="/developer/api-keys/<%= key.id %>/usage" class="ghost-button">Usage log</a>
+              <% if (!key.revokedAt) { %>
+                <form method="post" action="/developer/api-keys/<%= key.id %>/revoke" class="inline-form">
+                  <%- include('partials/csrf') %>
+                  <button type="submit" class="ghost-button danger">Revoke</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</section>
+
+<script id="preset-map" type="application/json"><%- JSON.stringify(presetMap) %></script>
+<script>
+  // Toggles the scope checkboxes when a preset is selected so the form stays discoverable.
+  (function () {
+    const presetMap = JSON.parse(document.getElementById('preset-map').textContent || '{}');
+    const select = document.getElementById('client-preset');
+    if (!select) return;
+    select.addEventListener('change', function (e) {
+      const checked = new Set(presetMap[e.target.value] || []);
+      document.querySelectorAll('input[name="scopes"]').forEach(function (box) {
+        box.checked = checked.has(box.value);
+      });
+    });
+  }());
+</script>

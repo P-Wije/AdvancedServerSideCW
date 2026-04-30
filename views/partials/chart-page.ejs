@@ -1,0 +1,28 @@
+<section class="page-header">
+  <a class="back-link" href="/analytics">&larr; All analytics</a>
+  <h1><%= title %></h1>
+  <p class="muted"><%= description %></p>
+</section>
+
+<%- include('filter-form', { formAction: '/analytics/' + slug }) %>
+
+<section class="card chart-card">
+  <div class="card-header-row">
+    <div class="chart-meta">
+      <span class="chart-type-pill"><%= chartType %></span>
+      <span id="chart-insight" class="badge badge-healthy">Loading insight…</span>
+    </div>
+    <div class="chart-actions">
+      <button type="button" class="ghost-button" data-download-png>Download PNG</button>
+      <a class="ghost-button" href="<%= api %>?<%= toQuery(filters, { format: 'csv' }) %>" target="_blank" rel="noopener">Export CSV</a>
+      <a class="ghost-button" href="<%= api %>?<%= toQuery(filters) %>" target="_blank" rel="noopener">View JSON</a>
+    </div>
+  </div>
+  <div class="chart-canvas-wrapper">
+    <canvas id="primary-chart"></canvas>
+  </div>
+  <script id="chart-data" type="application/json"><%- JSON.stringify({ chartType, insightLevel, slug, data }) %></script>
+</section>
+
+<script src="/js/charts.js" defer></script>
+<script src="/js/analytics-page.js" defer></script>

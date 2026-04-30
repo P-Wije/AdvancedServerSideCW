@@ -1,0 +1,37 @@
+<section class="page-header">
+  <h1><%= apiKey.name %></h1>
+  <p class="muted">Usage audit for token prefix <code><%= apiKey.tokenPrefix %>...</code></p>
+</section>
+
+<section class="card">
+  <ul class="bullet-list">
+    <li><strong>Scopes:</strong> <code><%= apiKey.scopes %></code></li>
+    <li><strong>Created:</strong> <%= apiKey.createdAt %></li>
+    <li><strong>Last used:</strong> <%= apiKey.lastUsedAt || '-' %></li>
+    <li><strong>Status:</strong> <%= apiKey.revokedAt ? 'Revoked at ' + apiKey.revokedAt : 'Active' %></li>
+  </ul>
+  <p><a href="/developer/api-keys" class="ghost-button">Back to keys</a></p>
+</section>
+
+<section class="card">
+  <h2>Recent activity</h2>
+  <% if (!usage.length) { %>
+    <p class="muted">No requests recorded yet.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead><tr><th>Time</th><th>Method</th><th>Endpoint</th><th>Status</th><th>IP</th><th>User agent</th></tr></thead>
+      <tbody>
+        <% usage.forEach(row => { %>
+          <tr>
+            <td><%= row.createdAt %></td>
+            <td><%= row.httpMethod %></td>
+            <td><code><%= row.endpoint %></code></td>
+            <td><%= row.responseStatus %></td>
+            <td><%= row.ipAddress || '-' %></td>
+            <td><%= row.userAgent || '-' %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</section>

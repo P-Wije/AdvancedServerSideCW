@@ -1,0 +1,76 @@
+<section class="page-header">
+  <h1>Alumni directory</h1>
+  <p class="muted">Filter the cohort by programme, graduation date, industry sector, and country. Save useful filter combinations for re-use.</p>
+</section>
+
+<%- include('partials/filter-form', { formAction: '/alumni' }) %>
+
+<section class="card">
+  <div class="card-header-row">
+    <h2>Results <span class="muted">(<%= result.total %> matching)</span></h2>
+    <div>
+      <a class="ghost-button" href="/alumni?<%= toQuery(filters, { format: 'csv' }) %>">Export CSV</a>
+    </div>
+  </div>
+  <% if (!result.rows.length) { %>
+    <p class="muted">No alumni match the current filters.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Programme</th><th>Graduation</th><th>Current role</th><th>Employer</th><th>Sector</th><th>Location</th></tr></thead>
+      <tbody>
+        <% result.rows.forEach(row => { %>
+          <tr>
+            <td><%= row.firstName %> <%= row.lastName %></td>
+            <td><%= row.programme || '-' %></td>
+            <td><%= row.graduationDate || '-' %></td>
+            <td><%= row.jobTitle || '-' %></td>
+            <td><%= row.employer || '-' %></td>
+            <td><%= row.industrySector || '-' %></td>
+            <td><%= [row.locationCity, row.locationCountry].filter(Boolean).join(', ') || '-' %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+    <nav class="pagination">
+      <% if (result.page > 1) { %>
+        <a class="ghost-button" href="?<%= toQuery(filters, { page: result.page - 1 }) %>">Previous</a>
+      <% } %>
+      <span class="muted">Page <%= result.page %> of <%= result.pageCount %></span>
+      <% if (result.page < result.pageCount) { %>
+        <a class="ghost-button" href="?<%= toQuery(filters, { page: result.page + 1 }) %>">Next</a>
+      <% } %>
+    </nav>
+  <% } %>
+</section>
+
+<section class="card">
+  <h2>Filter presets</h2>
+  <form method="post" action="/alumni/presets" class="stack inline-row">
+    <%- include('partials/csrf') %>
+    <input type="hidden" name="programme" value="<%= filters.programme || '' %>">
+    <input type="hidden" name="graduationFrom" value="<%= filters.graduationFrom || '' %>">
+    <input type="hidden" name="graduationTo" value="<%= filters.graduationTo || '' %>">
+    <input type="hidden" name="sector" value="<%= filters.sector || '' %>">
+    <input type="hidden" name="country" value="<%= filters.country || '' %>">
+    <label class="field">
+      <span>Save current filters as</span>
+      <input type="text" name="name" required maxlength="80">
+    </label>
+    <button type="submit" class="primary-button">Save preset</button>
+  </form>
+  <% if (presets.length) { %>
+    <ul class="preset-list">
+      <% presets.forEach(p => { %>
+        <% const parsed = (() => { try { return JSON.parse(p.filtersJson); } catch (e) { return {}; } })(); %>
+        <li>
+          <a href="/alumni?<%= toQuery(parsed) %>"><%= p.name %></a>
+          <code class="muted"><%= p.filtersJson %></code>
+          <form method="post" action="/alumni/presets/<%= p.id %>/delete" class="inline-form">
+            <%- include('partials/csrf') %>
+            <button type="submit" class="ghost-button danger">Remove</button>
+          </form>
+        </li>
+      <% }); %>
+    </ul>
+  <% } %>
+</section>

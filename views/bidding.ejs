@@ -1,0 +1,93 @@
+<section class="page-header">
+  <h1>Blind bidding</h1>
+  <p class="muted">Bid for tomorrow's featured slot. You can only see whether you're winning or not, never the highest bid amount.</p>
+</section>
+
+<section class="kpi-grid">
+  <div class="kpi-card">
+    <span class="kpi-label">Target date</span>
+    <span class="kpi-value-sm"><%= targetDate %></span>
+  </div>
+  <div class="kpi-card">
+    <span class="kpi-label">Your status</span>
+    <span class="kpi-value-sm">
+      <% if (blindStatus.feedback === 'winning') { %>
+        <span class="badge badge-emerging">Winning</span>
+      <% } else if (blindStatus.feedback === 'not-winning') { %>
+        <span class="badge badge-significant">Not winning</span>
+      <% } else { %>
+        <span class="badge badge-healthy">No active bid</span>
+      <% } %>
+    </span>
+  </div>
+  <div class="kpi-card">
+    <span class="kpi-label">Your bid</span>
+    <span class="kpi-value-sm"><%= blindStatus.currentBidAmount ? '£' + Number(blindStatus.currentBidAmount).toFixed(2) : '-' %></span>
+  </div>
+  <div class="kpi-card">
+    <span class="kpi-label">Monthly slots remaining</span>
+    <span class="kpi-value-sm"><%= monthlyAllowance.remaining %> / <%= monthlyAllowance.maxWins %><% if (monthlyAllowance.hasBonus) { %> <span class="badge badge-emerging">Event bonus</span><% } %></span>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Place or increase your bid</h2>
+  <% if (!biddingOpen) { %>
+    <p class="muted">Bidding for tomorrow is closed. Come back after midnight when the next round opens.</p>
+  <% } else { %>
+    <form method="post" action="/bidding" class="stack inline-row">
+      <%- include('partials/csrf') %>
+      <label class="field">
+        <span>Bid amount (GBP)</span>
+        <input type="number" name="amount" min="0.01" step="0.01" required>
+      </label>
+      <button type="submit" class="primary-button">Submit bid</button>
+    </form>
+    <p class="muted small">Bid increases must strictly exceed your previous amount.</p>
+  <% } %>
+</section>
+
+<section class="card">
+  <h2>Event participation bonus</h2>
+  <p class="muted">Attending one university alumni event each month unlocks a fourth featured slot opportunity.</p>
+  <form method="post" action="/bidding/event-participation" class="stack inline-row">
+    <%- include('partials/csrf') %>
+    <label class="field">
+      <span>Event name</span>
+      <input type="text" name="eventName" required minlength="3" maxlength="120">
+    </label>
+    <label class="field">
+      <span>Date attended</span>
+      <input type="date" name="participatedOn" required>
+    </label>
+    <button type="submit" class="primary-button">Record participation</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Your bid history</h2>
+  <% if (!history.length) { %>
+    <p class="muted">No bids on record yet.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead><tr><th>Target date</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        <% history.forEach(b => { %>
+          <tr>
+            <td><%= b.targetDate %></td>
+            <td>£<%= Number(b.amount).toFixed(2) %></td>
+            <td><span class="bid-status bid-status-<%= b.status %>"><%= b.status %></span></td>
+            <td>
+              <% if (b.status === 'active' && b.targetDate === targetDate) { %>
+                <form method="post" action="/bidding/cancel/<%= b.id %>" class="inline-form">
+                  <%- include('partials/csrf') %>
+                  <button type="submit" class="ghost-button">Cancel</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</section>

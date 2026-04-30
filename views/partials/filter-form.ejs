@@ -1,0 +1,46 @@
+<%
+  const formAction = locals.formAction || '';
+%>
+<form class="filter-form" method="get" action="<%= formAction %>">
+  <div class="filter-grid">
+    <label>
+      <span>Programme</span>
+      <select name="programme">
+        <option value="">All programmes</option>
+        <% (filterOptions.programmes || []).forEach((opt) => { %>
+          <option value="<%= opt %>" <%= filters.programme === opt ? 'selected' : '' %>><%= opt %></option>
+        <% }); %>
+      </select>
+    </label>
+    <label>
+      <span>Graduation from</span>
+      <input type="date" name="graduationFrom" value="<%= filters.graduationFrom || '' %>">
+    </label>
+    <label>
+      <span>Graduation to</span>
+      <input type="date" name="graduationTo" value="<%= filters.graduationTo || '' %>">
+    </label>
+    <label>
+      <span>Industry sector</span>
+      <select name="sector">
+        <option value="">All sectors</option>
+        <% (filterOptions.sectors || []).forEach((opt) => { %>
+          <option value="<%= opt %>" <%= filters.sector === opt ? 'selected' : '' %>><%= opt %></option>
+        <% }); %>
+      </select>
+    </label>
+    <label>
+      <span>Country</span>
+      <select name="country">
+        <option value="">All countries</option>
+        <% (filterOptions.countries || []).forEach((opt) => { %>
+          <option value="<%= opt %>" <%= filters.country === opt ? 'selected' : '' %>><%= opt %></option>
+        <% }); %>
+      </select>
+    </label>
+    <div class="filter-actions">
+      <button type="submit" class="primary-button">Apply filters</button>
+      <a href="<%= formAction || '?' %>" class="ghost-button">Clear</a>
+    </div>
+  </div>
+</form>

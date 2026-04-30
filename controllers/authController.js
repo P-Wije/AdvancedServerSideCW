@@ -16,6 +16,8 @@ const { isoNow } = require('../lib/time');
 async function register(req, res) {
   const email = String(req.body.email || '').trim().toLowerCase();
   const password = String(req.body.password || '');
+  const requestedRole = String(req.body.role || 'alumni').toLowerCase();
+  const role = ['alumni', 'university_staff'].includes(requestedRole) ? requestedRole : 'alumni';
 
   if (getUserByEmail(email)) {
     return res.status(409).json({ message: 'That email is already registered.' });
@@ -28,16 +30,17 @@ async function register(req, res) {
     INSERT INTO users (
       email,
       password_hash,
+      role,
       verification_token_hash,
       verification_token_expires_at,
       created_at,
       updated_at
     )
-    VALUES (?, ?, ?, datetime('now', '+24 hours'), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    VALUES (?, ?, ?, ?, datetime('now', '+24 hours'), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
   `);
 
-  const result = insert.run(email, passwordHash, verificationToken.hash);
-  const verificationUrl = `${config.appBaseUrl}/verify-email.html?token=${verificationToken.plain}`;
+  const result = insert.run(email, passwordHash, role, verificationToken.hash);
+  const verificationUrl = `${config.appBaseUrl}/verify-email?token=${verificationToken.plain}`;
 
   await sendMail({
     to: email,
@@ -116,7 +119,7 @@ async function resendVerification(req, res) {
     WHERE id = ?
   `).run(verificationToken.hash, user.id);
 
-  const verificationUrl = `${config.appBaseUrl}/verify-email.html?token=${verificationToken.plain}`;
+  const verificationUrl = `${config.appBaseUrl}/verify-email?token=${verificationToken.plain}`;
   await sendMail({
     to: email,
     subject: 'Verify your University of Eastminster account',
@@ -168,6 +171,7 @@ async function login(req, res) {
     user: {
       id: user.id,
       email: user.email,
+      role: user.role || 'alumni',
       verified: Boolean(user.email_verified_at),
     },
     csrfToken: req.session.csrfToken,
@@ -215,7 +219,7 @@ async function forgotPassword(req, res) {
       WHERE id = ?
     `).run(resetToken.hash, user.id);
 
-    const resetUrl = `${config.appBaseUrl}/reset-password.html?token=${resetToken.plain}`;
+    const resetUrl = `${config.appBaseUrl}/reset-password?token=${resetToken.plain}`;
     await sendMail({
       to: email,
       subject: 'Reset your Alumni Influencers password',

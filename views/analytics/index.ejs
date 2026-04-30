@@ -1,0 +1,34 @@
+<section class="page-header">
+  <h1>Analytics overview</h1>
+  <p class="muted">Eight charts capturing graduate outcomes, post-graduation development, and curriculum coverage. Apply filters to drill into a programme or cohort.</p>
+</section>
+
+<%- include('../partials/filter-form', { formAction: '/analytics' }) %>
+
+<section class="kpi-grid">
+  <div class="kpi-card"><span class="kpi-value"><%= summary.totalAlumni %></span><span class="kpi-label">Total alumni</span></div>
+  <div class="kpi-card"><span class="kpi-value"><%= summary.programmesCount %></span><span class="kpi-label">Programmes</span></div>
+  <div class="kpi-card"><span class="kpi-value"><%= summary.employedNow %></span><span class="kpi-label">Currently employed</span></div>
+  <div class="kpi-card"><span class="kpi-value"><%= summary.sectorsCount %></span><span class="kpi-label">Industry sectors</span></div>
+</section>
+
+<section class="card">
+  <div class="card-header-row">
+    <h2>Charts</h2>
+    <a class="ghost-button" href="/analytics/report.pdf?<%= toQuery(filters) %>">Download PDF report</a>
+  </div>
+  <div class="chart-grid">
+    <% tiles.forEach(tile => { %>
+      <a class="chart-tile" href="/analytics/<%= tile.slug %>?<%= toQuery(filters) %>">
+        <h3><%= tile.title %></h3>
+        <p class="muted"><%= tile.description %></p>
+        <div class="chart-mini" data-mini-chart data-chart-type="<%= tile.chartType %>" data-chart-payload='<%- JSON.stringify(tile.data) %>'>
+          <canvas></canvas>
+        </div>
+      </a>
+    <% }); %>
+  </div>
+</section>
+
+<script src="/js/charts.js" defer></script>
+<script src="/js/analytics-hub.js" defer></script>
